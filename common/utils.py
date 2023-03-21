@@ -1,6 +1,5 @@
-import numpy as np
-import inspect
 import functools
+import inspect
 
 
 def store_args(method):
@@ -49,6 +48,27 @@ def make_env(args):
     for content in env.action_space:
         action_shape.append(content.n)
     args.action_shape = action_shape[:args.n_agents]  # 每一维代表该agent的act维度
+    args.high_action = 1
+    args.low_action = -1
+    return env, args
+
+
+def make_charge_env(args):
+    from multiagent.charge_environment import MultiPileEnv
+    from multiagent.scenarios import simple_charge
+
+    # load scenario from script
+    scenario = simple_charge.Scenario()
+
+    # create world
+    world = scenario.make_world()
+    world.cycle = args.max_episode_len
+    # create multi-agent environment
+    env = MultiPileEnv(world, scenario.reward, scenario.observation, scenario.reset_world)
+    # env = MultiAgentEnv(world)
+    args.n_agents = env.n_agents
+    args.obs_shape = [env.observation_space[i].shape[0] for i in range(args.n_agents)]
+    args.action_shape = [env.action_space[i].shape[0] for i in range(args.n_agents)]
     args.high_action = 1
     args.low_action = -1
     return env, args
