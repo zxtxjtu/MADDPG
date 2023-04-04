@@ -140,11 +140,11 @@ class Runner:
             for time_step in range(self.args.evaluate_episode_len):
                 actions = []
 
-                writer_station.add_scalars('station_record', {'working_num': self.env.world.working_num,
-                                                              'waiting_num': self.env.world.wait.still_wait,
-                                                              'coming_evs':
-                                                                  len(self.env.world.wait.wait_EVs) - coming_evs
-                                                              }, time_step)
+                # writer_station.add_scalars('station_record', {'working_num': self.env.world.working_num,
+                #                                               'waiting_num': self.env.world.wait.still_wait,
+                #                                               'coming_evs':
+                #                                                   len(self.env.world.wait.wait_EVs) - coming_evs
+                #                                               }, time_step)
                 # for i, pile in enumerate(self.env.piles):
                 #     if pile.connected:
                 #         writer_piles[i].add_scalars('pile_%d' % (i + 1), {
@@ -157,19 +157,19 @@ class Runner:
                         action = agent.select_action(s[agent_id], 0, 0)
                         actions.append(action)
 
-                for i, pile in enumerate(self.env.piles):
-                    if pile.connected:
-                        writer_piles.add_scalars('piles', {
-                            'pile_%d_cur_b' % i: pile.state.cur_b,
-                            'pile_%d_tar_b' % i: pile.state.tar_b
-                        }, time_step)
+                # for i, pile in enumerate(self.env.piles):
+                #     if pile.connected:
+                #         writer_piles.add_scalars('piles', {
+                #             'pile_%d_cur_b' % i: pile.state.cur_b,
+                #             'pile_%d_tar_b' % i: pile.state.tar_b
+                #         }, time_step)
                 self.env.world_step(actions)
-                for i, pile in enumerate(self.env.piles):
-                    if pile.connected:
-                        writer_piles.add_scalars('piles', {
-                            'pile_%d_action' % i: pile.real_action,
-                            'pile_%d_cur_b_new' % i: pile.state.cur_b
-                        }, time_step)
+                # for i, pile in enumerate(self.env.piles):
+                #     if pile.connected:
+                #         writer_piles.add_scalars('piles', {
+                #             'pile_%d_action' % i: pile.real_action,
+                #             'pile_%d_cur_b_new' % i: pile.state.cur_b
+                #         }, time_step)
                 s_next, r, done, info = self.env.step(actions)
 
                 miss_info += info['energy_miss']
@@ -180,15 +180,15 @@ class Runner:
                 rewards += r[0]
                 s = s_next
 
-                writer_station.add_scalars('station_record', {'rewards': rewards,
-                                                              'extra_deal': self.env.world.extra_deal,
-                                                              'es_action': self.env.world.es.real_action,
-                                                              'es_capacity': self.env.es.state.cur_c,
-                                                              'piles_power_sum': self.env.world.piles_power_sum,
-                                                              'pv_power': self.env.world.pv.power[
-                                                                  (self.env.world.cur_t - 1) % len(
-                                                                      self.env.world.pv.power)]
-                                                              }, time_step)
+                # writer_station.add_scalars('station_record', {'rewards': rewards,
+                #                                               'extra_deal': self.env.world.extra_deal,
+                #                                               'es_action': self.env.world.es.real_action,
+                #                                               'es_capacity': self.env.es.state.cur_c,
+                #                                               'piles_power_sum': self.env.world.piles_power_sum,
+                #                                               'pv_power': self.env.world.pv.power[
+                #                                                   (self.env.world.cur_t - 1) % len(
+                #                                                       self.env.world.pv.power)]
+                #                                               }, time_step)
 
             # for i in range(len(miss_info)):
             #     writer_info.add_scalars('left_ev', {'get': get_info[i],
@@ -201,4 +201,5 @@ class Runner:
             returns.append(rewards)
             print(np.mean(miss_info).round(1))
             print(np.mean(save_time_info).round(2))
+            print(self.env.world.es.state.cur_c)
         return sum(returns) / self.args.evaluate_episodes
