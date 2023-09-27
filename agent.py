@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-import os
+
 from maddpg.maddpg import MADDPG
 
 
@@ -15,6 +15,7 @@ class Agent:
             u = np.random.uniform(-self.args.high_action, self.args.high_action, self.args.action_shape[self.agent_id])
         else:
             inputs = torch.tensor(o, dtype=torch.float32).unsqueeze(0)
+            self.policy.actor_network.cpu()
             pi = self.policy.actor_network(inputs).squeeze(0)
             # print('{} : {}'.format(self.name, pi))
             u = pi.cpu().numpy()
@@ -25,4 +26,3 @@ class Agent:
 
     def learn(self, transitions, other_agents):
         self.policy.train(transitions, other_agents)
-

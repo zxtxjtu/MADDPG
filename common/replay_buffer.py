@@ -1,5 +1,7 @@
 import threading
+
 import numpy as np
+import torch
 
 
 class Buffer:
@@ -27,19 +29,19 @@ class Buffer:
                 self.buffer['u_%d' % i][idxs] = u[i]
                 self.buffer['r_%d' % i][idxs] = r[i]
                 self.buffer['o_next_%d' % i][idxs] = o_next[i]
-    
+
     # sample the data from the replay buffer
     def sample(self, batch_size):
         temp_buffer = {}
         idx = np.random.randint(0, self.current_size, batch_size)
         for key in self.buffer.keys():
-            temp_buffer[key] = self.buffer[key][idx]
+            temp_buffer[key] = torch.from_numpy(self.buffer[key][idx])
         return temp_buffer
 
     def _get_storage_idx(self, inc=None):
         inc = inc or 1
-        if self.current_size+inc <= self.size:
-            idx = np.arange(self.current_size, self.current_size+inc)
+        if self.current_size + inc <= self.size:
+            idx = np.arange(self.current_size, self.current_size + inc)
         elif self.current_size < self.size:
             overflow = inc - (self.size - self.current_size)
             idx_a = np.arange(self.current_size, self.size)
@@ -47,7 +49,7 @@ class Buffer:
             idx = np.concatenate([idx_a, idx_b])
         else:
             idx = np.random.randint(0, self.size, inc)
-        self.current_size = min(self.size, self.current_size+inc)
+        self.current_size = min(self.size, self.current_size + inc)
         if inc == 1:
             idx = idx[0]
         return idx

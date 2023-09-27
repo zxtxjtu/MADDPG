@@ -1,4 +1,5 @@
 import os
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,8 @@ from tqdm import tqdm
 
 from agent import Agent
 from common.replay_buffer import Buffer
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class Runner:
@@ -67,27 +70,42 @@ class Runner:
     #         np.save(self.save_path + '/returns.pkl', returns)
 
     def charge_run(self):
-        # np.random.seed(0)
         returns = []
         for time_step in tqdm(range(self.args.time_steps)):
             # reset the environment
             if time_step % self.episode_limit == 0:
                 s = self.env.reset()
             u = []
+            step_start = time.time()
             with torch.no_grad():
                 for agent_id, agent in enumerate(self.agents):
+                    # agent.policy.actor_network.cpu()
                     action = agent.select_action(s[agent_id], self.noise, self.epsilon)
                     u.append(action)
             self.env.world_step(u)
             s_next, r, done, info = self.env.step(u)
             self.buffer.store_episode(s, u, r, s_next)
             s = s_next
-            if self.buffer.current_size >= self.args.batch_size:
+            # step_end = time.time()
+            # print("step_time:%f" % (step_end - step_start))
+            if self.buffer.current_size >= self.args.batch_size and time_step % 4 == 0:
+                # sample_start = time.time()
                 transitions = self.buffer.sample(self.args.batch_size)
+                # sample_end = time.time()
+                # print("sample:%f" % (sample_end - sample_start))
+                for agent in self.agents:
+                    if self.args.gpu_use:
+                        agent.policy.actor_network.to(device)
+                        agent.policy.actor_target_network.to(device)
+                        agent.policy.critic_network.to(device)
+                        agent.policy.critic_target_network.to(device)
                 for agent in self.agents:
                     other_agents = self.agents.copy()
                     other_agents.remove(agent)
+                    # train_start = time.time()
                     agent.learn(transitions, other_agents)
+                    train_end = time.time()
+                    # print("train:%f" % (train_end - train_start))
             if time_step > 0 and time_step % self.args.evaluate_rate == 0:
                 returns.append(self.charge_evaluate())
                 plt.figure()
@@ -99,6 +117,8 @@ class Runner:
             self.epsilon = max(0.05, self.epsilon - 0.0000005)
 
             np.save(self.save_path + '/returns.pkl', returns)
+            step_end = time.time()
+            print("one timestep:%f" % (step_end - step_start))
 
     # def evaluate(self):
     #     returns = []
@@ -171,12 +191,12 @@ class Runner:
                 #             'pile_%d_cur_b_new' % i: pile.state.cur_b
                 #         }, time_step)
                 s_next, r, done, info = self.env.step(actions)
-
+                #
                 miss_info += info['energy_miss']
-                bill_info += info['ev_payment']
+                # bill_info += info['ev_payment']
                 save_time_info += info['ev_save_time']
-                get_info += info['energy_get']
-                code_info += info['ev_code']
+                # get_info += info['energy_get']
+                # code_info += info['ev_code']
                 rewards += r[0]
                 s = s_next
 
@@ -188,6 +208,11 @@ class Runner:
                 #                                               'pv_power': self.env.world.pv.power[
                 #                                                   (self.env.world.cur_t - 1) % len(
                 #                                                       self.env.world.pv.power)]
+                #                                               }, time_step)
+
+                # writer_station.add_scalars('station_record', {
+                #                                               'es_action': self.env.world.es.real_action,
+                #                                               'piles_power_sum': self.env.world.piles_power_sum
                 #                                               }, time_step)
 
             # for i in range(len(miss_info)):

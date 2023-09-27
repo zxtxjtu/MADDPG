@@ -4,6 +4,8 @@ import torch
 
 from maddpg.actor_critic import Actor, Critic
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class MADDPG:
     def __init__(self, args, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
@@ -60,7 +62,7 @@ class MADDPG:
     # update the network
     def train(self, transitions, other_agents):
         for key in transitions.keys():
-            transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
+            transitions[key] = torch.tensor(transitions[key], dtype=torch.float32, device=device)
         r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
         o, u, o_next = [], [], []  # 用来装每个agent经验中的各项
         for agent_id in range(self.args.n_agents):
